@@ -36,6 +36,10 @@ class SocialController {
 
         return entries.documents
             .map { it.data + ("id" to it.id) }
+            .filter { 
+                val postPrivacy = it["privacy"] as? String ?: "FRIENDS"
+                postPrivacy == "FRIENDS" || it["userId"] == uid
+            }
             .sortedByDescending { (it["timestamp"] as? com.google.cloud.Timestamp)?.seconds ?: 0L }
     }
 
