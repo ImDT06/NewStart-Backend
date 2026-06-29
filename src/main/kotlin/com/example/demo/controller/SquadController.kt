@@ -46,7 +46,7 @@ class SquadController {
         
         val docRef = db.collection("squads").document(id)
         db.runTransaction { transaction ->
-            val snapshot = transaction.get(docRef)
+            val snapshot = transaction.get(docRef).get()
             val members = snapshot.get("members") as? MutableList<String> ?: mutableListOf()
             if (!members.contains(uid)) {
                 members.add(uid)
@@ -62,7 +62,7 @@ class SquadController {
         
         val docRef = db.collection("squads").document(id)
         db.runTransaction { transaction ->
-            val snapshot = transaction.get(docRef)
+            val snapshot = transaction.get(docRef).get()
             val members = snapshot.get("members") as? MutableList<String> ?: mutableListOf()
             members.remove(uid)
             transaction.update(docRef, "members", members)
