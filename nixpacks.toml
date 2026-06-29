@@ -1,5 +1,5 @@
 [variables]
-    NIXPACKS_JDK_VERSION = "17"
+    NIXPACKS_JDK_VERSION = "21"
 
 [phases.build]
     cmds = ["chmod +x gradlew", "./gradlew build -x test"]
