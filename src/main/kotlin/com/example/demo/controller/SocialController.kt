@@ -36,10 +36,6 @@ class SocialController {
 
         return entries.documents
             .map { it.data + ("id" to it.id) }
-            .filter { 
-                val postPrivacy = it["privacy"] as? String ?: "FRIENDS"
-                postPrivacy == "FRIENDS" || it["userId"] == uid
-            }
             .sortedByDescending { (it["timestamp"] as? com.google.cloud.Timestamp)?.seconds ?: 0L }
     }
 
@@ -52,8 +48,20 @@ class SocialController {
         val doc = docRef.get().get()
         
         if (doc.exists()) {
-            val reactions = doc.get("reactions") as? MutableMap<String, String> ?: mutableMapOf()
-            reactions[uid] = emoji
+            val rawReactions = doc.get("reactions") as? Map<*, *>
+            val reactions = mutableMapOf<String, String>()
+            rawReactions?.forEach { (k, v) ->
+                if (k != null && v != null) {
+                    reactions[k.toString()] = v.toString()
+                }
+            }
+            
+            if (reactions[uid] == emoji) {
+                reactions.remove(uid)
+            } else {
+                reactions[uid] = emoji
+            }
+            
             docRef.update("reactions", reactions).get()
         }
     }
