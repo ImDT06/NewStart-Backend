@@ -84,10 +84,56 @@ class SquadController {
         val uid = SecurityContextHolder.getContext().authentication!!.principal as String
         val db = FirestoreClient.getFirestore()
         
+        val senderDoc = db.collection("users").document(uid).get().get()
+        val senderName = senderDoc.getString("name") ?: "Người dùng"
+        
         val messageWithMetadata = message + mapOf(
             "senderId" to uid,
+            "senderName" to senderName,
             "timestamp" to com.google.cloud.Timestamp.now()
         )
         db.collection("squads").document(id).collection("messages").add(messageWithMetadata).get()
+
+        // Gửi thông báo bất đồng bộ để tránh block client
+        java.util.concurrent.CompletableFuture.runAsync {
+            try {
+                val squadDoc = db.collection("squads").document(id).get().get()
+                if (squadDoc.exists()) {
+                    val squadName = squadDoc.getString("name") ?: "Nhóm"
+                    val members = squadDoc.get("members") as? List<String> ?: emptyList()
+                    val recipientIds = members.filter { it != uid }
+                    
+                    if (recipientIds.isNotEmpty()) {
+                        val querySnapshot = db.collection("users")
+                            .whereIn(com.google.cloud.firestore.FieldPath.documentId(), recipientIds)
+                            .get()
+                            .get()
+                        
+                        val text = message["text"] as? String ?: "Đã gửi một tin nhắn"
+                        val fcm = com.google.firebase.messaging.FirebaseMessaging.getInstance()
+                        
+                        for (doc in querySnapshot.documents) {
+                            val fcmToken = doc.getString("fcmToken")
+                            if (!fcmToken.isNullOrEmpty()) {
+                                val msg = com.google.firebase.messaging.Message.builder()
+                                    .setToken(fcmToken)
+                                    .setNotification(
+                                        com.google.firebase.messaging.Notification.builder()
+                                            .setTitle(squadName)
+                                            .setBody("$senderName: $text")
+                                            .build()
+                                    )
+                                    .putData("squadId", id)
+                                    .build()
+                                fcm.send(msg)
+                            }
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                println(">>> Lỗi gửi thông báo tin nhắn nhóm: ${e.message}")
+                e.printStackTrace()
+            }
+        }
     }
 }
