@@ -82,21 +82,21 @@ class SquadController {
     @PostMapping("/{id}/messages")
     fun sendMessage(@PathVariable id: String, @RequestBody message: Map<String, Any>) {
         val uid = SecurityContextHolder.getContext().authentication!!.principal as String
-        val db = FirestoreClient.getFirestore()
         
-        val senderDoc = db.collection("users").document(uid).get().get()
-        val senderName = senderDoc.getString("name") ?: "Người dùng"
-        
-        val messageWithMetadata = message + mapOf(
-            "senderId" to uid,
-            "senderName" to senderName,
-            "timestamp" to com.google.cloud.Timestamp.now()
-        )
-        db.collection("squads").document(id).collection("messages").add(messageWithMetadata).get()
-
-        // Gửi thông báo bất đồng bộ để tránh block client
+        // Execute database writes and notification asynchronously to allow the HTTP response to return immediately
         java.util.concurrent.CompletableFuture.runAsync {
             try {
+                val db = FirestoreClient.getFirestore()
+                val senderDoc = db.collection("users").document(uid).get().get()
+                val senderName = senderDoc.getString("name") ?: "Người dùng"
+                
+                val messageWithMetadata = message + mapOf(
+                    "senderId" to uid,
+                    "senderName" to senderName,
+                    "timestamp" to com.google.cloud.Timestamp.now()
+                )
+                db.collection("squads").document(id).collection("messages").add(messageWithMetadata).get()
+
                 val squadDoc = db.collection("squads").document(id).get().get()
                 if (squadDoc.exists()) {
                     val squadName = squadDoc.getString("name") ?: "Nhóm"
@@ -131,7 +131,7 @@ class SquadController {
                     }
                 }
             } catch (e: Exception) {
-                println(">>> Lỗi gửi thông báo tin nhắn nhóm: ${e.message}")
+                println(">>> Lỗi xử lý tin nhắn nhóm: ${e.message}")
                 e.printStackTrace()
             }
         }
