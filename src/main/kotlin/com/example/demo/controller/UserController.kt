@@ -13,7 +13,7 @@ class UserController {
         val db = FirestoreClient.getFirestore()
         val doc = db.collection("users").document(id).get().get()
         return if (doc.exists()) {
-            doc.data + ("id" to doc.id)
+            doc.data?.let { it + ("id" to doc.id) }
         } else {
             null
         }
