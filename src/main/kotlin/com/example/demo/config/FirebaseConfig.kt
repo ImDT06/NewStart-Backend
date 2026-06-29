@@ -13,15 +13,13 @@ class FirebaseConfig {
     @PostConstruct
     fun initialize() {
         try {
-            // Đọc chìa khóa từ biến môi trường (Environment Variable)
             val firebaseKey = System.getenv("FIREBASE_KEY")
             
-            if (firebaseKey == null) {
-                println(">>> Lỗi: Không tìm thấy biến môi trường FIREBASE_KEY ❌")
+            if (firebaseKey.isNullOrEmpty()) {
+                println(">>> CẢNH BÁO: Không tìm thấy FIREBASE_KEY. Server sẽ chạy không có kết nối Database. ⚠️")
                 return
             }
 
-            // Xử lý chuỗi JSON từ biến môi trường để đảm bảo định dạng đúng
             val options = FirebaseOptions.builder()
                 .setCredentials(GoogleCredentials.fromStream(ByteArrayInputStream(firebaseKey.toByteArray())))
                 .build()
@@ -31,8 +29,7 @@ class FirebaseConfig {
                 println(">>> NewStart Backend: Firebase đã kết nối BẢO MẬT thành công! ✅")
             }
         } catch (e: Exception) {
-            println(">>> Lỗi kết nối Firebase bảo mật: ${e.message} ❌")
-            // Không in e.printStackTrace() để tránh lộ thông tin nhạy cảm trong log nếu có lỗi format
+            println(">>> Lỗi kết nối Firebase: ${e.message}")
         }
     }
 }
