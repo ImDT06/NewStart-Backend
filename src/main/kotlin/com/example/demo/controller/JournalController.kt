@@ -3,6 +3,7 @@ package com.example.demo.controller
 import com.google.firebase.cloud.FirestoreClient
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.annotation.*
+import com.google.cloud.Timestamp
 
 @RestController
 @RequestMapping("/api/journal")
@@ -26,7 +27,8 @@ class JournalController {
         val uid = SecurityContextHolder.getContext().authentication!!.principal as String
         val db = FirestoreClient.getFirestore()
         
-        val entryWithUser = entry + ("userId" to uid) + ("timestamp" to com.google.firebase.Timestamp.now())
+        // Sửa kiểu dữ liệu Timestamp cho đúng môi trường Server
+        val entryWithUser = entry + ("userId" to uid) + ("timestamp" to Timestamp.now())
         val docRef = db.collection("journals").document()
         docRef.set(entryWithUser).get()
         
