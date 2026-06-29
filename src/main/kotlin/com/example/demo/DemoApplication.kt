@@ -7,5 +7,6 @@ import org.springframework.boot.runApplication
 class DemoApplication
 
 fun main(args: Array<String>) {
-	runApplication<DemoApplication>(*args)
+    println(">>> NewStart Backend đang khởi động...")
+    runApplication<DemoApplication>(*args)
 }
