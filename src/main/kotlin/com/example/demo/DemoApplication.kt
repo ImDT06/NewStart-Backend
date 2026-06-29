@@ -7,6 +7,10 @@ import org.springframework.boot.runApplication
 class DemoApplication
 
 fun main(args: Array<String>) {
-    println(">>> NewStart Backend đang khởi động...")
+    for (i in 1..20) println("==========================================")
+    println(">>> HỆ THỐNG NEWSTART ĐANG BẮT ĐẦU CHẠY...")
+    println(">>> PORT ĐANG DÙNG: " + System.getenv("PORT"))
+    for (i in 1..20) println("==========================================")
+
     runApplication<DemoApplication>(*args)
 }
