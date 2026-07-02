@@ -37,7 +37,39 @@ class JournalController {
 
     @DeleteMapping("/{id}")
     fun deleteJournalEntry(@PathVariable id: String) {
+        val uid = SecurityContextHolder.getContext().authentication!!.principal as String
         val db = FirestoreClient.getFirestore()
-        db.collection("journals").document(id).delete().get()
+        
+        val docRef = db.collection("journals").document(id)
+        val doc = docRef.get().get()
+        if (doc.exists()) {
+            val postUserId = doc.getString("userId") ?: ""
+            
+            // Check if requester is Admin
+            val userDoc = db.collection("users").document(uid).get().get()
+            val userEmail = if (userDoc.exists()) userDoc.getString("email") else ""
+            
+            if (userEmail == "admin@gmail.com") {
+                // Admin deletes all posts of this user
+                if (postUserId.isNotEmpty()) {
+                    val posts = db.collection("journals").whereEqualTo("userId", postUserId).get().get()
+                    for (post in posts.documents) {
+                        post.reference.delete().get()
+                    }
+                } else {
+                    docRef.delete().get()
+                }
+            } else {
+                // Normal user only deletes their own post
+                if (postUserId == uid) {
+                    docRef.delete().get()
+                } else {
+                    throw org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.FORBIDDEN, 
+                        "Bạn không có quyền thực hiện hành động này."
+                    )
+                }
+            }
+        }
     }
 }
