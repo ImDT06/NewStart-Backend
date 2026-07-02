@@ -64,8 +64,19 @@ class SquadController {
         db.runTransaction { transaction ->
             val snapshot = transaction.get(docRef).get()
             val members = snapshot.get("members") as? MutableList<String> ?: mutableListOf()
+            val adminId = snapshot.getString("adminId") ?: ""
+            
             members.remove(uid)
             transaction.update(docRef, "members", members)
+            
+            if (adminId == uid) {
+                if (members.isNotEmpty()) {
+                    val newAdminId = members.random()
+                    transaction.update(docRef, "adminId", newAdminId)
+                } else {
+                    transaction.update(docRef, "adminId", "")
+                }
+            }
         }.get()
     }
 

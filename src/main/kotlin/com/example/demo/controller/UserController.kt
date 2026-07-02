@@ -85,4 +85,43 @@ class UserController {
 
         return users.distinctBy { it["id"] as? String }
     }
+
+    @PutMapping("/{id}/block")
+    fun blockUser(@PathVariable id: String, @RequestParam block: Boolean): Map<String, Any> {
+        val uid = SecurityContextHolder.getContext().authentication!!.principal as String
+        val db = FirestoreClient.getFirestore()
+        
+        val adminDoc = db.collection("users").document(uid).get().get()
+        if (!adminDoc.exists() || adminDoc.getString("email") != "admin@gmail.com") {
+            throw org.springframework.web.server.ResponseStatusException(
+                org.springframework.http.HttpStatus.FORBIDDEN, 
+                "Chỉ Admin mới có quyền thực hiện chức năng này."
+            )
+        }
+
+        val docRef = db.collection("blocked_users").document(id)
+        if (block) {
+            docRef.set(mapOf("blocked" to true)).get()
+        } else {
+            docRef.delete().get()
+        }
+        return mapOf("success" to true, "userId" to id, "blocked" to block)
+    }
+
+    @GetMapping("/blocked")
+    fun getBlockedUsers(): Set<String> {
+        val uid = SecurityContextHolder.getContext().authentication!!.principal as String
+        val db = FirestoreClient.getFirestore()
+        
+        val adminDoc = db.collection("users").document(uid).get().get()
+        if (!adminDoc.exists() || adminDoc.getString("email") != "admin@gmail.com") {
+            throw org.springframework.web.server.ResponseStatusException(
+                org.springframework.http.HttpStatus.FORBIDDEN, 
+                "Chỉ Admin mới có quyền thực hiện chức năng này."
+            )
+        }
+
+        val snapshot = db.collection("blocked_users").get().get()
+        return snapshot.documents.map { it.id }.toSet()
+    }
 }
